@@ -1,4 +1,4 @@
-# Dynamic Survival Blending via Information Geometry, Statistical Decision Theory, and Relative Uncertainty
+# Dynamic Survival Blending via Information Geometry, Bayesian Predictive Modeling, and Relative Uncertainty
 
 **Nathan Green**  
 *Department of Statistical Science, University College London, UK*  
@@ -45,7 +45,7 @@ Rather than forcing an arbitrary, heuristic textbook Beta curve onto the extrapo
 1. **Geometric Separation / Clinical Divergence:** The empirical discrepancy between the internal trial extrapolation and the external anchor.
 2. **Relative Epistemic Uncertainty:** The statistical precision loss (risk-set depletion) of the internal trial model as administrative censoring depletes patient numbers.
 
-This paper establishes an objective mathematical architecture unifying **information geometry**, **statistical decision theory**, and **Bayesian predictive modeling** for dynamic survival blending, providing a comprehensive framework for health economic decision modeling.
+This paper establishes an objective mathematical architecture unifying **information geometry**, **optimal transport**, and **Bayesian predictive modeling** for dynamic survival blending, providing a comprehensive framework for health economic decision modeling.
 
 ---
 
@@ -97,113 +97,7 @@ Because KL divergence is strictly asymmetric, minimizing divergence between anch
 
 ---
 
-### 2.2 Decision-Theoretic Derivation of the Optimal Blending Weight via Expected Loss (MSE)
-
-To eliminate arbitrary heuristic choices for the weight schedule $\pi(t)$, we can derive the mathematically optimal blending weight from first principles of statistical decision theory.
-
-Consider the linear survival blend at time $t$:
-$$S_{\text{blend}}(t) = \pi(t) S_{\text{obs}}(t) + (1 - \pi(t)) S_{\text{ext}}(t)$$
-where $\pi(t) \in [0, 1]$ represents the weight allocated to the internal trial model, and $(1 - \pi(t))$ is the weight allocated to the external reference anchor.
-
-Our objective is to find the optimal weight $\pi^*(t)$ that minimizes the **Mean Squared Error (MSE)** of the blended survival estimator:
-$$\text{MSE}\left(S_{\text{blend}}(t)\right) = \mathbb{E}\left[\left(S_{\text{blend}}(t) - S_{\text{true}}(t)\right)^2\right] = \text{Variance}\left(S_{\text{blend}}(t)\right) + \left[\text{Bias}\left(S_{\text{blend}}(t)\right)\right]^2$$
-
-#### 1. Variance of the Blended Curve
-Assuming that the internal clinical trial cohort and the external registry cohort are statistically independent samples, the variance of the linear combination is:
-$$V_{\text{blend}}(t) = \text{Var}\left(\pi(t) S_{\text{obs}}(t) + (1 - \pi(t)) S_{\text{ext}}(t)\right) = \pi(t)^2 V_{\text{obs}}(t) + (1 - \pi(t))^2 V_{\text{ext}}(t)$$
-where $V_{\text{obs}}(t) = \text{Var}(\hat{S}_{\text{obs}}(t))$ and $V_{\text{ext}}(t) = \text{Var}(\hat{S}_{\text{ext}}(t))$.
-
-#### 2. Bias of the Blended Curve
-In long-term health economic extrapolation, the mature external registry represents the asymptotic ground-truth mortality of the general population:
-$$\mathbb{E}[S_{\text{ext}}(t)] = S_{\text{true}}(t)$$
-Consequently, the bias of relying on the extrapolated trial model is the discrepancy between the two curves:
-$$\Delta(t) = S_{\text{obs}}(t) - S_{\text{ext}}(t)$$
-The expected bias of the blended curve is therefore:
-$$\text{Bias}(S_{\text{blend}}(t)) = \mathbb{E}\left[S_{\text{blend}}(t) - S_{\text{true}}(t)\right] = \pi(t) S_{\text{obs}}(t) + (1 - \pi(t)) S_{\text{ext}}(t) - S_{\text{ext}}(t) = \pi(t) \left(S_{\text{obs}}(t) - S_{\text{ext}}(t)\right) = \pi(t) \Delta(t)$$
-Notice the crucial mathematical property: **the bias of the blended curve is strictly scaled by the trial weight $\pi(t)$**.
-
-#### 3. Minimization of Total MSE
-Substituting the variance and squared bias into the total MSE yields:
-$$\text{MSE}(\pi) = \pi(t)^2 V_{\text{obs}}(t) + (1 - \pi(t))^2 V_{\text{ext}}(t) + \pi(t)^2 \Delta(t)^2$$
-To find the optimal weight $\pi(t)$, we differentiate $\text{MSE}(\pi)$ with respect to $\pi$ and set the derivative to zero:
-$$\frac{\partial \text{MSE}}{\partial \pi} = 2\pi V_{\text{obs}}(t) - 2(1 - \pi) V_{\text{ext}}(t) + 2\pi \Delta(t)^2 = 0$$
-Dividing by 2 and collecting terms:
-$$\pi V_{\text{obs}}(t) - V_{\text{ext}}(t) + \pi V_{\text{ext}}(t) + \pi \Delta(t)^2 = 0 \implies \pi \left[V_{\text{obs}}(t) + V_{\text{ext}}(t) + \Delta(t)^2\right] = V_{\text{ext}}(t)$$
-Solving for $\pi(t)$ yields the closed-form optimal trial weight:
-
-$$\pi_{\text{trial}}^*(t) = \frac{V_{\text{ext}}(t)}{V_{\text{obs}}(t) + V_{\text{ext}}(t) + \Delta(t)^2}$$
-
-and the corresponding weight allocated to the external anchor $\pi_{\text{ext}}^*(t) = 1 - \pi_{\text{trial}}^*(t)$ is:
-
-$$\pi_{\text{ext}}^*(t) = \frac{V_{\text{obs}}(t) + \Delta(t)^2}{V_{\text{obs}}(t) + V_{\text{ext}}(t) + \Delta(t)^2}$$
-
-#### 4. The Dynamic "Tug-of-War" in the Denominator
-This closed-form solution reveals the exact statistical mechanism governing dynamic blending:
-1. **Pure Precision Weighting when Aligned:** If the trial extrapolation aligns perfectly with registry data ($\Delta(t) \to 0$), the formula simplifies to classic inverse-variance optimal weighting:
-   $$\pi_{\text{trial}}^*(t) = \frac{V_{\text{ext}}}{V_{\text{obs}} + V_{\text{ext}}} = \frac{\tau_{\text{obs}}}{\tau_{\text{obs}} + \tau_{\text{ext}}}$$
-   where $\tau = 1/V$ denotes precision.
-2. **The Bias Penalty Gate:** If the trial extrapolation drifts wildly away from the external anchor, $\Delta(t)^2$ explodes. Because $\Delta(t)^2$ sits directly in the denominator of $\pi_{\text{trial}}^*(t)$, it heavily penalizes reliance on the trial model.
-3. **Overpowering Requirement:** To maintain weight on the trial extrapolation when $\Delta(t)^2 > 0$, the trial data must possess overwhelming statistical precision ($V_{\text{obs}}(t) \approx 0$).
-4. **Automatic Tail Collapse:** As patient follow-up ends and administrative censoring depletes the trial risk set, trial variance inevitably explodes ($V_{\text{obs}}(t) \to \infty$). The denominator is completely dominated by $V_{\text{obs}}(t)$, driving $\pi_{\text{trial}}^*(t) \to 0$ and shifting $100\%$ of the weight to the external anchor.
-
----
-
-### 2.3 Asymptotic Equivalence of Squared Bias and KL Divergence via Taylor Series
-
-At any fixed time point $t$, patient survival can be formalized as a **Bernoulli trial**: a patient is alive with probability $S(t)$, and dead with probability $1 - S(t)$.
-
-The directed Kullback–Leibler divergence between two Bernoulli distributions $P_{\text{obs}} = \text{Bernoulli}(S_{\text{obs}})$ and $P_{\text{ext}} = \text{Bernoulli}(S_{\text{ext}})$ is:
-$$D_{\mathrm{KL}}(S_{\text{obs}} \parallel S_{\text{ext}}) = S_{\text{obs}} \ln\left(\frac{S_{\text{obs}}}{S_{\text{ext}}}\right) + (1 - S_{\text{obs}}) \ln\left(\frac{1 - S_{\text{obs}}}{1 - S_{\text{ext}}}\right)$$
-
-Applying a second-order Taylor series expansion of $D_{\mathrm{KL}}(S_{\text{obs}} \parallel S_{\text{ext}})$ around $S_{\text{obs}} \approx S_{\text{ext}}$ *(see Appendix A.3)*:
-$$D_{\mathrm{KL}}(S_{\text{obs}} \parallel S_{\text{ext}}) \approx \frac{1}{2} \mathcal{I}(S_{\text{ext}}) (S_{\text{obs}} - S_{\text{ext}})^2$$
-where $\mathcal{I}(S_{\text{ext}}) = \frac{1}{S_{\text{ext}}(1 - S_{\text{ext}})}$ is the **Fisher Information** of the Bernoulli distribution.
-
-Rearranging this relationship reveals that the squared error $\Delta(t)^2$ is asymptotically proportional to the Fisher-weighted KL divergence:
-$$\Delta(t)^2 = (S_{\text{obs}}(t) - S_{\text{ext}}(t))^2 \approx 2 \, S_{\text{ext}}(t)(1 - S_{\text{ext}}(t)) \, D_{\mathrm{KL}}\left(S_{\text{obs}}(t) \parallel S_{\text{ext}}(t)\right)$$
-
-Substituting this into our decision-theoretic weight formula yields:
-$$\pi_{\text{trial}}^*(t) \approx \frac{V_{\text{ext}}(t)}{V_{\text{obs}}(t) + V_{\text{ext}}(t) + 2 S_{\text{ext}}(t)(1 - S_{\text{ext}}(t)) D_{\mathrm{KL}}\left(S_{\text{obs}}(t) \parallel S_{\text{ext}}(t)\right)}$$
-This establishes a rigorous, unified bridge: **the information-theoretic KL divergence penalty is the exact mathematical counterpart to expected loss minimization under squared error loss**.
-
----
-
-### 2.4 Generalization to Bounded Probability Metrics (Wasserstein, TVD, JSD, Hellinger, MMD)
-
-While KL divergence provides an elegant theoretical penalty, it possesses practical vulnerabilities in long-term survival tails: as $S(t) \to 0$, the logarithmic term $\ln(S_{\text{obs}}/S_{\text{ext}})$ can become numerically unstable. We can substitute $\Delta(t)^2$ with alternative probability metrics:
-
-#### 1. 1-Wasserstein Distance ($W_1$ / Earth Mover's Distance)
-Instead of relative entropy, the 1-Wasserstein distance measures the minimal physical "work" required to transport probability mass. For two discrete Bernoulli states on $\{0, 1\}$, the 1-Wasserstein distance simplifies to:
-$$W_1\left(S_{\text{obs}}(t), S_{\text{ext}}(t)\right) = \int_0^1 |F_{\text{obs}}(u) - F_{\text{ext}}(u)| du = |S_{\text{obs}}(t) - S_{\text{ext}}(t)|$$
-Therefore, the squared bias is **identically equal to the squared 1-Wasserstein distance**:
-$$\Delta(t)^2 \equiv W_1\left(S_{\text{obs}}(t), S_{\text{ext}}(t)\right)^2$$
-*Remarkable consequence:* Substituting Wasserstein distance into the denominator requires **no Taylor series approximations**. Furthermore:
-- **Symmetric:** $W_1(S_{\text{obs}}, S_{\text{ext}}) = W_1(S_{\text{ext}}, S_{\text{obs}})$, removing subjective reference choices.
-- **Strictly Bounded $[0, 1]$:** Completely avoids $\log(0)$ crashes when $S(t) \to 0$ in the extreme tail.
-- **Direct Economic Interpretation:** In health economics, 1-Wasserstein distance on survival functions is directly proportional to the area between curves—representing the physical **Expected Opportunity Loss (EVPI)**.
-
-#### 2. Total Variation Distance (TVD)
-For binary outcomes, the total variation distance is:
-$$\text{TVD}(t) = \frac{1}{2} \left( |S_{\text{obs}} - S_{\text{ext}}| + |(1 - S_{\text{obs}}) - (1 - S_{\text{ext}})| \right) = |S_{\text{obs}}(t) - S_{\text{ext}}(t)|$$
-Notice that for pointwise survival, **TVD is mathematically identical to 1-Wasserstein distance** *(Appendix A.4)*.
-
-#### 3. Jensen–Shannon Divergence (JSD)
-Let $M(t) = \frac{1}{2} S_{\text{obs}}(t) + \frac{1}{2} S_{\text{ext}}(t)$ denote the equal mixture. Then:
-$$\text{JSD}(t) = \frac{1}{2} D_{\mathrm{KL}}(S_{\text{obs}} \parallel M) + \frac{1}{2} D_{\mathrm{KL}}(S_{\text{ext}} \parallel M)$$
-JSD is strictly symmetric and bounded on $[0, \ln 2]$, providing a stable S-curve transition without risk of infinite values.
-
-#### 4. Hellinger Distance ($H^2$)
-$$H^2(t) = \frac{1}{2} \left[ \left(\sqrt{S_{\text{obs}}} - \sqrt{S_{\text{ext}}}\right)^2 + \left(\sqrt{1 - S_{\text{obs}}} - \sqrt{1 - S_{\text{ext}}}\right)^2 \right] = 1 - \sqrt{S_{\text{obs}}S_{\text{ext}}} - \sqrt{(1 - S_{\text{obs}})(1 - S_{\text{ext}})}$$
-Hellinger distance is symmetric, strictly bounded on $[0, 1]$, and maps directly to the Bhattacharyya overlap coefficient. Because it evaluates square roots, it is hyper-sensitive to sparse tails, acting as an early-warning trigger for treatment effect waning.
-
-#### 5. Maximum Mean Discrepancy (MMD) / Kernel Distances
-MMD computes distances in a Reproducing Kernel Hilbert Space (RKHS) without assuming parametric distribution forms:
-$$\text{MMD}^2(P_{\text{obs}}, P_{\text{ext}}) = \mathbb{E}[k(X, X')] - 2\mathbb{E}[k(X, Y)] + \mathbb{E}[k(Y, Y')]$$
-This allows dynamic blending to operate directly on non-parametric Bayesian MCMC draws from Stan/JAGS without Gaussian delta-method approximations.
-
----
-
-### 2.5 Representation of Epistemic Uncertainty & Predictive Beliefs
+### 2.2 Representation of Epistemic Uncertainty & Predictive Beliefs
 
 At each time point $t \in [t_1, t_2]$, the analyst possesses point estimates of survival $\hat{S}_{\text{obs}}(t)$ and $\hat{S}_{\text{ext}}(t)$ alongside their respective estimation uncertainties. In health economics, epistemic uncertainty can be represented across three standard modalities:
 
@@ -231,11 +125,17 @@ When models are estimated via Bayesian Markov Chain Monte Carlo (MCMC) (e.g., in
 
 ---
 
-### 2.6 Approach 1: Unified Divergence-Paced Clock ("Speedometer")
+### 2.3 Approach 1: Unified Divergence-Paced Clock ("Speedometer")
 
 In Approach 1, the dynamic weight schedule $\pi(t)$ is generated organically by treating pointwise statistical divergence between the trial model and external evidence as a **divergence odometer**.
 
-Let $D(t) = D(P_{\text{obs},t}, P_{\text{ext},t})$ denote the instantaneous discrepancy at time $t$. The cumulative weight schedule is defined as:
+Let $D(t) = D(P_{\text{obs},t}, P_{\text{ext},t})$ denote the instantaneous discrepancy at time $t$. Under Gaussian predictive beliefs $P_{\text{obs},t} = \mathcal{N}(\hat{S}_{\text{obs}}(t), \sigma_{\text{obs}}^2(t))$ and $P_{\text{ext},t} = \mathcal{N}(\hat{S}_{\text{ext}}(t), \sigma_{\text{ext}}^2(t))$, the directed KL divergence is:
+$$D_{\mathrm{KL}}(t) = \frac{1}{2}\left[\ln\left(\frac{\sigma_{\text{ext}}^2(t)}{\sigma_{\text{obs}}^2(t)}\right) + \frac{\sigma_{\text{obs}}^2(t) + \left(\hat{S}_{\text{obs}}(t) - \hat{S}_{\text{ext}}(t)\right)^2}{\sigma_{\text{ext}}^2(t)} - 1\right]$$
+This formulation encapsulates two critical dynamics simultaneously:
+- **Geometric Separation:** The squared deviation $(\hat{S}_{\text{obs}}(t) - \hat{S}_{\text{ext}}(t))^2$ directly penalizes trajectories where the parametric trial extrapolation diverges away from long-term registry mortality.
+- **Relative Uncertainty:** As trial follow-up ends and patient-level censoring dominates the tail, $\sigma_{\text{obs}}^2(t)$ inflates rapidly while $\sigma_{\text{ext}}^2(t)$ remains tightly constrained. The variance ratio $\sigma_{\text{obs}}^2(t)/\sigma_{\text{ext}}^2(t)$ accelerates $D_{\mathrm{KL}}(t)$, signaling an objective loss of credibility in the trial model.
+
+The cumulative weight schedule is defined as:
 
 $$\pi_D(t) = \frac{\int_{t_1}^t w(u) D(u) \, du}{\int_{t_1}^{t_2} w(u) D(u) \, du}, \quad t \in [t_1, t_2]$$
 
@@ -266,7 +166,7 @@ This guarantees that both the survival curve and the hazard function transition 
 
 ---
 
-### 2.7 Approach 2: Generalized Information & Metric Barycenters (Fréchet Means)
+### 2.4 Approach 2: Generalized Information & Metric Barycenters (Fréchet Means)
 
 Rather than utilizing divergence solely as a scalar clock to pace a pre-selected blending formula, Approach 2 reformulates blending as an explicit **Fréchet mean optimization problem** directly in information space:
 
@@ -275,11 +175,11 @@ $$M^*(t) = \arg\min_M \left[ (1 - \lambda(t)) D(M, P_{\text{obs},t}) + \lambda(t
 where $\lambda(t) = 3u^2 - 2u^3$ (with $u = \frac{t - t_1}{t_2 - t_1}$) is a baseline Hermite smoothstep progression parameter ensuring $C^1$ boundary compliance ($\lambda'(t_1) = \lambda'(t_2) = 0$).
 
 #### 1. Reverse-KL Barycenter: Precision-Weighted Pooling
-When $D(M, P_i) = D_{\mathrm{KL}}(M \parallel P_i)$, the solution is the exponential barycenter. Defining precision as inverse variance $\tau(t) = 1/\sigma^2(t)$, the intermediate cumulative hazard is:
+When $D(M, P_i) = D_{\mathrm{KL}}(M \parallel P_i)$, the solution is the exponential barycenter. Defining precision as inverse variance $\tau(t) = 1/\sigma^2(t)$, the intermediate cumulative hazard (or survival mean) is weighted directly by statistical precision:
 
 $$H_{\text{bary}}(t) = \frac{(1 - \lambda(t))\tau_{\text{obs}}(t) H_{\text{obs}}(t) + \lambda(t)\tau_{\text{ext}}(t) H_{\text{ext}}(t)}{(1 - \lambda(t))\tau_{\text{obs}}(t) + \lambda(t)\tau_{\text{ext}}(t)}$$
 
-and the blended survival curve is $S_{\text{bary}}(t) = \exp(-H_{\text{bary}}(t))$.
+and the blended survival curve is $S_{\text{bary}}(t) = \exp(-H_{\text{bary}}(t))$ (or directly on the survival scale, $S_{\text{bary}}(t) = \frac{(1 - \lambda(t))\tau_{\text{obs}}(t) \hat{S}_{\text{obs}}(t) + \lambda(t)\tau_{\text{ext}}(t) \hat{S}_{\text{ext}}(t)}{(1 - \lambda(t))\tau_{\text{obs}}(t) + \lambda(t)\tau_{\text{ext}}(t)}$).
 
 **Clinical Mechanism:** As trial follow-up ends and patient-level censoring depletes the risk set, $\sigma_{\text{obs}}^2(t) \to \infty$, driving $\tau_{\text{obs}}(t) \to 0$. Even if the nominal progress clock is only at $\lambda(t) = 0.50$, the high precision of the external registry ($\tau_{\text{ext}} \gg \tau_{\text{obs}}$) mathematically dominates the ratio, **automatically snapping the blended curve to the reliable external evidence without subjective human intervention**.
 
@@ -297,16 +197,48 @@ In contrast to KL precision pooling where precisions add, in Wasserstein space s
 | **Wasserstein-2 ($\min_M \sum w_i W_2^2(M, P_i)$)** | Displacement Interpolation (McCann interpolant) | **Standard-Deviation Interpolation:** $\sigma_M = (1-\lambda)\sigma_{\text{obs}} + \lambda\sigma_{\text{ext}}$ | Smooth uncertainty bridging without extreme variance distortions. |
 | **$\alpha$-Divergence ($\min_M \sum w_i D_\alpha(M, P_i)$)** | Chernoff / Rényi $\alpha$-Mixture: $M \propto \left(\sum w_i P_i^{\frac{1-\alpha}{2}}\right)^{\frac{2}{1-\alpha}}$ | **Power-Mean Interpolation:** Bridges geometric ($\alpha=-1$) and linear ($\alpha=1$) | Tunable information geometry linking hazard and survival spaces. |
 
-#### The Grand Unification of Direct Discrepancy and Intermediated Barycenters
-A key question is whether direct curve comparison (Approach 1) and intermediated barycenters (Approach 2) conflict. In fact, **they mutually prove each other**:
-When you formulate an intermediated linear barycenter $S_{\text{blend}} = \pi S_{\text{obs}} + (1-\pi)S_{\text{ext}}$ and solve for the optimal weight that minimizes its Mean Squared Error relative to the ground-truth external anchor, the direct discrepancy $(S_{\text{obs}} - S_{\text{ext}})^2 \equiv W_1^2$ emerges *endogenously* from the derivative. The direct distance penalty is not an arbitrary ad-hoc addition; it is the exact mathematical consequence of minimizing expected loss on the intermediated barycenter.
-
 #### Justifications for Linear Survival Barycenters in HTA
 While geometric pooling on cumulative hazards possesses elegant hazard additivity, linear probability barycenters provide distinct methodological and clinical advantages:
 1. **Mathematical Demands of the Metric:** Under Forward-KL and 1-Wasserstein metrics, the Fréchet mean is mathematically proven to be linear.
 2. **Hazard Independence:** Linear pooling blends probabilities directly without imposing proportional or additive hazard constraints.
-3. **Finite Population Mixture Interpretation:** In HTA decision models, $\pi(t)$ carries a clean epidemiological meaning: it represents the proportion of the patient cohort whose survival is governed by trial-specific treatment mechanisms versus general background population mortality.
-4. **Exact Variance Tractability:** The variance $V_{\text{blend}} = \pi^2 V_{\text{obs}} + (1-\pi)^2 V_{\text{ext}}$ is exact and finite, avoiding delta-method Taylor instabilities in deep tails where $\ln S(t) \to -\infty$.
+3. **Finite Population Mixture Interpretation:** In HTA decision models, $\pi(t)$ carries a clean epidemiological meaning: it represents the proportion of the patient cohort whose survival is governed by general background population mortality versus trial-specific treatment mechanisms.
+
+---
+
+### 2.5 Generalization to Alternative Probability Metrics (1-Wasserstein, TVD, JSD, Hellinger, MMD)
+
+Replacing the Kullback–Leibler divergence with an alternative probability distance or divergence metric alters how the blending mechanism perceives and penalizes discrepancy between the observed trial model ($P_{\text{obs},t}$) and the external anchor ($P_{\text{ext},t}$):
+
+#### 1. 1-Wasserstein Distance ($W_1$ / Earth Mover's Distance)
+Instead of relative entropy, the 1-Wasserstein distance measures the minimal physical "work" required to transport one probability distribution into another:
+- **For Gaussian predictive distributions** $\mathcal{N}(\mu_1, \sigma_1^2)$ and $\mathcal{N}(\mu_2, \sigma_2^2)$:
+  $$W_1\left(P_{\text{obs},t}, P_{\text{ext},t}\right) = |\hat{S}_{\text{obs}}(t) - \hat{S}_{\text{ext}}(t)| + |\sigma_{\text{obs}}(t) - \sigma_{\text{ext}}(t)|$$
+- **For discrete Bernoulli survival states** on $\{0, 1\}$, the 1-Wasserstein distance simplifies to:
+  $$W_1\left(S_{\text{obs}}(t), S_{\text{ext}}(t)\right) = \int_0^1 |F_{\text{obs}}(u) - F_{\text{ext}}(u)| du = |S_{\text{obs}}(t) - S_{\text{ext}}(t)|$$
+- **Key Properties:**
+  - **Symmetric & Linear:** $W_1(P_{\text{obs}}, P_{\text{ext}}) = W_1(P_{\text{ext}}, P_{\text{obs}})$, removing subjective reference choices and avoiding quadratic/logarithmic volatility when variances diverge slowly.
+  - **Strictly Bounded $[0, 1]$ on Bernoulli States:** Completely avoids $\log(0)$ numerical instabilities when $S(t) \to 0$ in the extreme tail.
+  - **Direct Economic Interpretation:** In health economics, integrated 1-Wasserstein distance $\int |S_{\text{obs}}(u) - S_{\text{ext}}(u)| du$ is directly proportional to the area between survival curves—representing the physical **Expected Opportunity Loss (EVPI)**.
+
+#### 2. Total Variation Distance (TVD)
+For binary survival outcomes at time $t$, the total variation distance is:
+$$\text{TVD}(t) = \frac{1}{2} \left( |S_{\text{obs}} - S_{\text{ext}}| + |(1 - S_{\text{obs}}) - (1 - S_{\text{ext}})| \right) = |S_{\text{obs}}(t) - S_{\text{ext}}(t)|$$
+Notice that for pointwise Bernoulli survival states, **TVD is mathematically identical to 1-Wasserstein distance** *(see Appendix A.2)*.
+
+#### 3. Jensen–Shannon Divergence (JSD)
+The Jensen–Shannon divergence is a symmetrized, smoothed version of KL divergence computed against the midpoint mixture distribution $M = \frac{1}{2}(P_{\text{obs}} + P_{\text{ext}})$:
+$$\text{JSD}(P_{\text{obs}} \parallel P_{\text{ext}}) = \frac{1}{2} D_{\mathrm{KL}}(P_{\text{obs}} \parallel M) + \frac{1}{2} D_{\mathrm{KL}}(P_{\text{ext}} \parallel M)$$
+Unlike KL divergence, JSD is strictly symmetric and bounded on $[0, \ln 2]$ (or $[0, 1]$ in base-2 logarithms), naturally tracing out an organic, numerically stable S-curve transition without risk of infinite values when tail survival drops near zero.
+
+#### 4. Hellinger Distance ($H^2$)
+Hellinger distance measures the discrepancy between the square roots of the probability densities:
+$$H^2(P_{\text{obs},t}, P_{\text{ext},t}) = 1 - \sqrt{\frac{2\sigma_{\text{obs}}\sigma_{\text{ext}}}{\sigma_{\text{obs}}^2 + \sigma_{\text{ext}}^2}} \exp\left(-\frac{1}{4}\frac{(\hat{S}_{\text{obs}}(t) - \hat{S}_{\text{ext}}(t))^2}{\sigma_{\text{obs}}^2 + \sigma_{\text{ext}}^2}\right)$$
+(and for Bernoulli survival states, $H^2(t) = 1 - \sqrt{S_{\text{obs}}S_{\text{ext}}} - \sqrt{(1 - S_{\text{obs}})(1 - S_{\text{ext}})}$). Hellinger distance is symmetric, strictly bounded on $[0, 1]$, and maps directly to the Bhattacharyya overlap coefficient. Because it evaluates square roots, it is disproportionately sensitive to differences in sparse tails, acting as an early-warning trigger for treatment effect waning.
+
+#### 5. Maximum Mean Discrepancy (MMD) / Kernel Distances
+MMD computes distances in a Reproducing Kernel Hilbert Space (RKHS) without assuming parametric Gaussian forms for parameter uncertainties:
+$$\text{MMD}^2(P_{\text{obs}}, P_{\text{ext}}) = \mathbb{E}[k(X, X')] - 2\mathbb{E}[k(X, Y)] + \mathbb{E}[k(Y, Y')]$$
+This allows dynamic blending to operate directly on non-parametric Bayesian MCMC draws from Stan/JAGS with skewness or multi-modality without delta-method approximations.
 
 #### Table 2: Methodological Comparison & HTA Defensibility
 
@@ -340,19 +272,17 @@ graph TD
     B[Bayesian Blending Engine] --> B1[3.1 Posterior Predictive Pooling]
     B --> B2[3.2 Dynamic Bayesian Shrinkage]
     B --> B3[3.3 Time-Varying Bayesian Model Averaging BMA]
-    B1 --> C1[Sample-by-sample linear blend across MCMC draws]
+    B1 --> C1[Sample-by-sample blend across MCMC draws]
     B2 --> C2[External registry acts as time-varying informative prior]
     B3 --> C3[Pointwise ELPD & Softmax Pseudo-BMA Logic Gate]
     C3 --> D[Entropy explosion in unobserved tail automatically demotes trial model]
-    D --> E[Closed-form weight: π = σ_ext / (σ_obs + σ_ext)]
+    D --> E[Closed-form weight: π_obs = σ_ext / (σ_obs + σ_ext)]
 ```
 
 ### 3.1 Posterior Predictive Pooling (Sample-by-Sample Blending for PSA)
-Rather than calculating a single deterministic weight schedule from aggregate means and variances, blending is applied independently to every single MCMC iteration $k \in \{1, \dots, K\}$ sampled from the posterior distributions:
-$$S_{\text{blend}}^{(k)}(t) = \pi(t) S_{\text{obs}}^{(k)}(t) + (1 - \pi(t)) S_{\text{ext}}^{(k)}(t)$$
-The weight schedule $\pi(t)$ can either follow our deterministic closed-form formula or be evaluated dynamically on each draw:
-$$\pi^{(k)}(t) = \frac{V_{\text{ext}}(t)}{V_{\text{obs}}(t) + V_{\text{ext}}(t) + \left(S_{\text{obs}}^{(k)}(t) - S_{\text{ext}}^{(k)}(t)\right)^2}$$
-Computing this across thousands of MCMC draws produces an exact posterior predictive distribution for the blended curve. Crucially, this captures parameter covariance across all extrapolation intervals and generates robust 95% Credible Intervals for reimbursement dossiers without relying on asymptotic normal approximations.
+Rather than calculating a single deterministic curve from aggregate means and variances, blending is applied across every MCMC iteration $k \in \{1, \dots, K\}$ sampled from the posterior distributions:
+$$S_{\text{blend}}^{(k)}(t) = (1 - \pi^{(k)}(t)) S_{\text{obs}}^{(k)}(t) + \pi^{(k)}(t) S_{\text{ext}}^{(k)}(t)$$
+The weight schedule $\pi^{(k)}(t)$ can either use the empirical posterior variance and divergence clock computed across the ensemble of posterior draws, or be evaluated dynamically per draw using the pointwise distance between the sampled trajectories. Computing this across thousands of MCMC draws produces an exact posterior predictive distribution for the blended curve. Crucially, this captures parameter covariance across all extrapolation intervals and generates robust 95% Credible Intervals for reimbursement dossiers without relying on asymptotic normal approximations.
 
 ### 3.2 Dynamic Bayesian Shrinkage (The External Anchor as an Informative Prior)
 Rather than fitting two separate survival models and combining them post-hoc, dynamic blending can be formulated as a single hierarchical Bayesian model fitted to the internal trial data, where the external population curve functions as an informative, time-varying prior.
@@ -417,7 +347,7 @@ Substituting this exact expression back into our BMA logistic weight formula yie
 $$\pi_{\text{obs}}(t) = \frac{1}{1 + \exp\left(\ln\frac{\sigma_{\text{obs}}(t)}{\sigma_{\text{ext}}(t)}\right)} = \frac{1}{1 + \frac{\sigma_{\text{obs}}(t)}{\sigma_{\text{ext}}(t)}} = \frac{\sigma_{\text{ext}}(t)}{\sigma_{\text{obs}}(t) + \sigma_{\text{ext}}(t)}$$
 
 This is an analytical breakthrough for the dynblend methodology: **time-varying Bayesian Model Averaging in the unobserved extrapolation window simplifies directly to standard-deviation / precision weighting!**
-The analyst does not have to engineer artificial time-decay functions. The weight schedule $\pi_{\text{obs}}(t)$ shifts automatically from 1 to 0 purely through the mathematical physics of Bayesian entropy expansion *(see Appendix A.5 for proof)*.
+The analyst does not have to engineer artificial time-decay functions. The weight schedule $\pi_{\text{obs}}(t)$ shifts automatically from 1 to 0 purely through the mathematical physics of Bayesian entropy expansion *(see Appendix A.3 for proof)*.
 
 #### 6. Practical Computation via Leave-One-Out (LOO) Stacking in R
 In applied HTA, Bayesian models fitted in Stan or JAGS can estimate pointwise ELPD empirically using the `loo` package in R via Pareto-smoothed importance sampling (PSIS-LOO):
@@ -481,7 +411,7 @@ For each simulation run, candidate models are evaluated against five clinically 
    - 1-Wasserstein Optimal Transport Clock ($\pi_{\text{Wass}}$)
 5. **Approach 2 Precision Barycenter:**
    - Information Barycenter with inverse-variance precision weighting on the cumulative hazard scale.
-6. **Time-Varying BMA / Decision-Theoretic MSE Blends:**
+6. **Time-Varying Bayesian Model Averaging (Dynamic BMA):**
    - Softmax Pseudo-BMA weight based on pointwise ELPD / entropy differentials.
 
 ### 5.5 Performance Measures with Monte Carlo Standard Errors (MCSE)
@@ -548,42 +478,7 @@ Since $h_{\text{ble}}(t) = \frac{f_{\text{ble}}(t)}{S_{\text{ble}}(t)}$, the exa
 $$h_{\text{ble}}(t) = (1 - \pi(t)) h_{\text{obs}}(t) + \pi(t) h_{\text{ext}}(t) + \pi'(t)\ln\left(\frac{S_{\text{obs}}(t)}{S_{\text{ext}}(t)}\right)$$
 which completes the derivation. $\blacksquare$
 
-### A.2 Derivation of the Optimal MSE Blending Weight
-Consider $S_{\text{blend}} = \pi S_{\text{obs}} + (1 - \pi)S_{\text{ext}}$ with target $S_{\text{true}} = \mathbb{E}[S_{\text{ext}}]$.
-The total expected squared error is:
-$$\text{MSE}(\pi) = \text{Var}(S_{\text{blend}}) + [\text{Bias}(S_{\text{blend}})]^2$$
-Assuming $\text{Cov}(S_{\text{obs}}, S_{\text{ext}}) = 0$:
-$$\text{Var}(S_{\text{blend}}) = \pi^2 V_{\text{obs}} + (1 - \pi)^2 V_{\text{ext}}$$
-$$\text{Bias}(S_{\text{blend}}) = \mathbb{E}[\pi S_{\text{obs}} + (1 - \pi)S_{\text{ext}} - S_{\text{ext}}] = \pi(S_{\text{obs}} - S_{\text{ext}}) = \pi \Delta$$
-Therefore:
-$$\text{MSE}(\pi) = \pi^2 V_{\text{obs}} + (1 - \pi)^2 V_{\text{ext}} + \pi^2 \Delta^2$$
-Differentiating with respect to $\pi$:
-$$\frac{d \text{MSE}}{d \pi} = 2\pi V_{\text{obs}} - 2(1 - \pi)V_{\text{ext}} + 2\pi \Delta^2 = 0$$
-$$\pi(V_{\text{obs}} + V_{\text{ext}} + \Delta^2) = V_{\text{ext}} \implies \pi^* = \frac{V_{\text{ext}}}{V_{\text{obs}} + V_{\text{ext}} + \Delta^2}$$
-Since $\frac{d^2 \text{MSE}}{d \pi^2} = 2(V_{\text{obs}} + V_{\text{ext}} + \Delta^2) > 0$, this critical point is a global minimum. $\blacksquare$
-
-### A.3 Second-Order Taylor Expansion of Bernoulli KL Divergence
-Let $p = S_{\text{obs}}$ and $q = S_{\text{ext}}$. The directed KL divergence is:
-$$D_{\mathrm{KL}}(p \parallel q) = p \ln\left(\frac{p}{q}\right) + (1 - p)\ln\left(\frac{1 - p}{1 - q}\right)$$
-We expand $D_{\mathrm{KL}}(p \parallel q)$ as a function of $p$ around $p = q$:
-1. Value at $p = q$:
-   $$D_{\mathrm{KL}}(q \parallel q) = q \ln(1) + (1 - q)\ln(1) = 0$$
-2. First derivative with respect to $p$:
-   $$\frac{\partial}{\partial p} D_{\mathrm{KL}}(p \parallel q) = \ln\left(\frac{p}{q}\right) + p\left(\frac{1}{p}\right) - \ln\left(\frac{1 - p}{1 - q}\right) - (1 - p)\left(\frac{1}{1 - p}\right) = \ln\left(\frac{p}{q}\right) - \ln\left(\frac{1 - p}{1 - q}\right)$$
-   Evaluating at $p = q$:
-   $$\left.\frac{\partial}{\partial p} D_{\mathrm{KL}}(p \parallel q)\right|_{p = q} = \ln(1) - \ln(1) = 0$$
-3. Second derivative with respect to $p$:
-   $$\frac{\partial^2}{\partial p^2} D_{\mathrm{KL}}(p \parallel q) = \frac{1}{p} + \frac{1}{1 - p} = \frac{1}{p(1 - p)}$$
-   Evaluating at $p = q$:
-   $$\left.\frac{\partial^2}{\partial p^2} D_{\mathrm{KL}}(p \parallel q)\right|_{p = q} = \frac{1}{q(1 - q)} = \mathcal{I}(q)$$
-Applying Taylor's theorem:
-$$D_{\mathrm{KL}}(p \parallel q) = D_{\mathrm{KL}}(q \parallel q) + \left.\frac{\partial D_{\mathrm{KL}}}{\partial p}\right|_{p=q} (p - q) + \frac{1}{2}\left.\frac{\partial^2 D_{\mathrm{KL}}}{\partial p^2}\right|_{p=q} (p - q)^2 + \mathcal{O}((p - q)^3)$$
-$$D_{\mathrm{KL}}(p \parallel q) \approx \frac{1}{2 q(1 - q)} (p - q)^2$$
-Multiplying by $2 q(1 - q)$ gives:
-$$(p - q)^2 \approx 2 q(1 - q) D_{\mathrm{KL}}(p \parallel q)$$
-which confirms the exact Fisher scaling. $\blacksquare$
-
-### A.4 Proof of the 1-Wasserstein & TVD Identity for Bernoulli Survival
+### A.2 Proof of the 1-Wasserstein & TVD Identity for Bernoulli Survival
 For two Bernoulli probability distributions $P = \{p, 1-p\}$ and $Q = \{q, 1-q\}$ on $\{0, 1\}$:
 1. Total Variation Distance:
    $$\text{TVD}(P, Q) = \frac{1}{2}\sum_{x \in \{0, 1\}} |P(x) - Q(x)| = \frac{1}{2}\left( |(1 - p) - (1 - q)| + |p - q| \right) = \frac{1}{2}(|q - p| + |p - q|) = |p - q|$$
@@ -594,7 +489,7 @@ For two Bernoulli probability distributions $P = \{p, 1-p\}$ and $Q = \{q, 1-q\}
    $$W_1(P, Q) = \int_{-\infty}^\infty |F_P(u) - F_Q(u)| du = \int_0^1 |(1 - p) - (1 - q)| du = \int_0^1 |q - p| du = |p - q|$$
 Therefore, $\text{TVD}(P, Q) \equiv W_1(P, Q) \equiv |p - q|$ identically on discrete binary states. $\blacksquare$
 
-### A.5 Proof of the BMA Entropy-Collapse Theorem
+### A.3 Proof of the BMA Entropy-Collapse Theorem
 Let the predictive belief distributions at time $t$ beyond follow-up be univariate Gaussians:
 $$\hat{S}_{\text{obs}}(t) \sim \mathcal{N}\left(\mu_{\text{obs}}(t), \sigma_{\text{obs}}^2(t)\right), \quad \hat{S}_{\text{ext}}(t) \sim \mathcal{N}\left(\mu_{\text{ext}}(t), \sigma_{\text{ext}}^2(t)\right)$$
 The expected log predictive self-density is:
